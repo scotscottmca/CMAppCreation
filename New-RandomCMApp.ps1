@@ -1,29 +1,85 @@
-# Store the current working directory
-$OriginalDirectory = (Get-Location).Path
+# Import required scripts
+. ".\New-RandomMsiInstaller.ps1"
 
-try {
-    # Import required scripts and modules
-    . ".\New-RandomMsiInstaller.ps1"
-
-    if (-not (Get-Module -ListAvailable -Name PSMI)) {
-        # Try importing the module from the specified path
-        $ModulePath = "$env:PROGRAMFILES\PowerShell\Modules\PSMSI"
+function Initialize-PSMIModule {
+    <#
+    .SYNOPSIS
+    Ensures the PSMSI module is available and imported.
+    
+    .DESCRIPTION
+    Checks for the PSMSI module and installs it using the following priority:
+    1. First attempts to install from PowerShell Gallery (Install-Module PSMSI)
+    2. Falls back to installing from bundled PSMI.zip if Gallery installation fails
+    3. Handles both PSMI and PSMSI naming variations for compatibility
+    #>
+    
+    # Check for module availability (try both common names)
+    $ModuleAvailable = (Get-Module -ListAvailable -Name PSMI) -or (Get-Module -ListAvailable -Name PSMSI)
+    
+    if (-not $ModuleAvailable) {
+        Write-Host "PSMSI module not found. Attempting installation..." -ForegroundColor Yellow
+        
+        # First, try to install from PowerShell Gallery
         try {
-            if (Test-Path -Path $ModulePath) {
-                Import-Module -Name $ModulePath -ErrorAction Stop
-            } else {
-                throw "Module not found at $ModulePath"
-            }
-        } catch {
-            # If the module doesn't exist or import fails, extract and copy it
-            Expand-Archive -Path .\PSMI.zip -DestinationPath ".\PSMI" -Force > $null
-            Copy-Item -Path ".\PSMI" -Destination "$env:PROGRAMFILES\PowerShell\Modules\PSMSI\0.0.3\" -Recurse -Force > $null
-            Import-Module -Name "$env:PROGRAMFILES\PowerShell\Modules\PSMSI" -ErrorAction Stop
-            Remove-Item -Path ".\PSMI" -Recurse -Force
+            Write-Verbose "Attempting to install PSMSI module from PowerShell Gallery..."
+            Install-Module -Name PSMSI -Force -AllowClobber -ErrorAction Stop
+            Write-Host "PSMSI module installed successfully from PowerShell Gallery" -ForegroundColor Green
         }
-    } else {
-        Import-Module -Name PSMI -ErrorAction Stop
+        catch {
+            Write-Warning "Failed to install PSMSI from PowerShell Gallery: $($_.Exception.Message)"
+            Write-Host "Falling back to local archive installation..." -ForegroundColor Yellow
+            
+            # Fallback: Install from local ZIP file
+            try {
+                # Define paths
+                $ModulePath = "$env:PROGRAMFILES\PowerShell\Modules\PSMSI\0.0.3"
+                $TempExtractionPath = ".\PSMSI_temp"
+
+                # Check if local ZIP exists
+                if (-not (Test-Path ".\PSMI.zip")) {
+                    throw "PSMI.zip not found in current directory and PowerShell Gallery installation failed. Please ensure either internet connectivity or the PSMI.zip archive is available."
+                }
+
+                Write-Verbose "Installing PSMSI module from local archive..."
+                Expand-Archive -Path ".\PSMI.zip" -DestinationPath $TempExtractionPath -Force
+
+                # Create module directory if it doesn't exist
+                if (-not (Test-Path $ModulePath)) {
+                    New-Item -ItemType Directory -Path $ModulePath -Force | Out-Null
+                }
+                
+                Copy-Item -Path "$TempExtractionPath\*" -Destination $ModulePath -Recurse -Force
+                Remove-Item -Path $TempExtractionPath -Recurse -Force
+                
+                Write-Host "PSMSI module installed successfully from local archive to $ModulePath" -ForegroundColor Green
+            }
+            catch {
+                throw "Failed to install PSMSI module from both PowerShell Gallery and local archive: $($_.Exception.Message)"
+            }
+        }
     }
+    else {
+        Write-Verbose "PSMSI module is already available"
+    }
+    
+    # Import the module (prefer PSMSI, fallback to PSMI)
+    try {
+        if (Get-Module -ListAvailable -Name PSMSI) {
+            Import-Module -Name PSMSI -ErrorAction Stop
+            Write-Verbose "PSMSI module imported successfully"
+        }
+        elseif (Get-Module -ListAvailable -Name PSMI) {
+            Import-Module -Name PSMI -ErrorAction Stop
+            Write-Verbose "PSMI module imported successfully"
+        }
+        else {
+            throw "Neither PSMSI nor PSMI module could be found after installation attempts."
+        }
+    }
+    catch {
+        throw "Failed to import PSMSI module: $($_.Exception.Message)"
+    }
+}
 
     <#
     .SYNOPSIS
@@ -128,22 +184,29 @@ try {
             [string]$TotalSizeOfAdditionalFiles
         )
 
-        try {
-            # Attempt to import the Configuration Manager module
-            Import-Module $env:SMS_ADMIN_UI_PATH.Replace("\bin\i386", "\bin\configurationmanager.psd1") -ErrorAction Stop
-        } catch {
-            throw "Failed to import the Configuration Manager module. Ensure the SMS_ADMIN_UI_PATH environment variable is set correctly and the module exists."
-        }
+        # Store the current working directory for restoration later
+        $OriginalDirectory = (Get-Location).Path
 
         try {
-            # Attempt to get the site code
-            $SiteCode = Get-PSDrive -PSProvider CMSITE -ErrorAction Stop
-            if (-not $SiteCode) {
-                throw "Failed to retrieve the Configuration Manager site code. Ensure you have access to the Configuration Manager environment."
+            # Initialize required modules
+            Initialize-PSMIModule
+
+            # Attempt to import the Configuration Manager module
+            try {
+                Import-Module $env:SMS_ADMIN_UI_PATH.Replace("\bin\i386", "\bin\configurationmanager.psd1") -ErrorAction Stop
+            } catch {
+                throw "Failed to import the Configuration Manager module. Ensure the SMS_ADMIN_UI_PATH environment variable is set correctly and the module exists."
             }
-        } catch {
-            throw "Failed to retrieve the Configuration Manager site code. Ensure the Configuration Manager console is installed and accessible."
-        }
+
+            # Attempt to get the site code
+            try {
+                $SiteCode = Get-PSDrive -PSProvider CMSITE -ErrorAction Stop
+                if (-not $SiteCode) {
+                    throw "Failed to retrieve the Configuration Manager site code. Ensure you have access to the Configuration Manager environment."
+                }
+            } catch {
+                throw "Failed to retrieve the Configuration Manager site code. Ensure the Configuration Manager console is installed and accessible."
+            }
 
         for ($i = 1; $i -le $NumberOfApps; $i++) {
             Write-Host "Creating application $i of $NumberOfApps..." -ForegroundColor Cyan
@@ -218,10 +281,12 @@ try {
             
             Set-Location -Path $OriginalDirectory
         }
+        catch {
+            # Ensure we always return to the original directory, even on error
+            Set-Location -Path $OriginalDirectory
+            throw "Failed to create ConfigMgr applications: $($_.Exception.Message)"
+        }
     }
-} catch {
-    throw "Failed to create ConfigMgr apps, please retry. Error: $($_.Exception.Message)"
-}
 
 function Write-CustomObject {
     param (

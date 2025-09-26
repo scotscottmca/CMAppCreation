@@ -25,7 +25,8 @@ Before using this module, ensure you have:
 - **PowerShell execution policy** set to allow script execution
 - **Appropriate permissions** in Configuration Manager to create applications
 - **Network access** to the target output directory (UNC path)
-- **PSMI PowerShell module** for MSI creation (automatically installed if missing)
+- **Internet connectivity** (recommended) for automatic PSMSI module installation from PowerShell Gallery
+- **PSMSI PowerShell module** for MSI creation (automatically installed from PowerShell Gallery or local archive)
 
 ## Module Files
 
@@ -37,7 +38,54 @@ Before using this module, ensure you have:
 | `New-RandomIcon.ps1` | Creates colorful random icons for applications |
 | `New-RandomDescription.ps1` | Generates realistic application descriptions |
 | `New-RandomAdditionalFiles.ps1` | Creates additional files with specified sizes |
-| `PSMI.zip` | PowerShell MSI creation module (auto-installed) |
+| `PSMI.zip` | PowerShell MSI creation module (fallback archive) |
+
+## Dependencies
+
+This module relies on the **PSMSI** PowerShell module for MSI installer creation. The PSMSI module is maintained by Ironman Software and provides comprehensive MSI manipulation capabilities.
+
+- **PSMSI Module Repository**: [https://github.com/ironmansoftware/psmsi](https://github.com/ironmansoftware/psmsi)
+- **Installation Strategy**: 
+  1. **Primary**: Automatic installation from PowerShell Gallery (`Install-Module PSMSI`)
+  2. **Fallback**: Installation from bundled `PSMI.zip` archive (for offline scenarios)
+- **Author**: Ironman Software
+- **License**: MIT License
+
+## Installation and Setup
+
+### Quick Start
+1. **Download or clone** this repository to your system
+2. **Ensure Prerequisites** are met (see Prerequisites section above)
+3. **Run PowerShell as Administrator** (required for PSMSI module installation)
+4. **Navigate** to the CM App Creation directory
+5. **Execute** the main function:
+
+```powershell
+# Basic usage - creates 5 test applications
+. .\New-RandomCMApp.ps1
+New-RandomCMApp -OutputDirectory "\\yourserver\share\TestApps" -NumberOfApps 5
+```
+
+### PSMSI Module Installation
+The module automatically handles PSMSI installation using a two-tier approach:
+
+#### Online Installation (Recommended)
+- Automatically installs the latest PSMSI module from PowerShell Gallery
+- Ensures compatibility with the latest Windows Installer features
+- Requires internet connectivity during first run
+
+#### Offline Installation (Fallback)
+- Uses the bundled `PSMI.zip` archive if PowerShell Gallery is unavailable
+- Perfect for air-gapped or restricted network environments
+- Maintains full functionality without internet dependency
+
+### First Run Behavior
+```
+1. Check if PSMSI module is already installed ✓
+2. Attempt PowerShell Gallery installation (Install-Module PSMSI) ✓
+3. If Gallery fails, extract and install from PSMI.zip ✓
+4. Import module and proceed with application creation ✓
+```
 
 ## Usage
 
@@ -195,10 +243,12 @@ The function automatically handles:
 - Check write permissions on the output directory
 - Ensure network connectivity to the target server
 
-**PSMI Module Issues**
-- The script automatically installs PSMI module if missing
-- Requires administrator privileges for module installation
-- PSMI.zip must be present in the script directory
+**PSMSI Module Issues**
+- The script automatically attempts to install the PSMSI module from PowerShell Gallery
+- If PowerShell Gallery is unavailable, falls back to local PSMI.zip archive installation  
+- Requires administrator privileges for module installation to system paths
+- Internet connectivity recommended for getting the latest version from PowerShell Gallery
+- In offline environments, ensure PSMI.zip is present in the script directory
 
 ### Validation Steps
 
@@ -248,6 +298,19 @@ Feel free to submit issues, feature requests, or improvements to enhance the fun
 - **v1.1**: Added support for additional files and size specification
 - **v1.2**: Enhanced error handling and validation
 - **v1.3**: Added comprehensive help documentation and README
+- **v1.4**: Improved PSMSI module installation with PowerShell Gallery priority and fallback support
+
+## Credits and Acknowledgments
+
+- **PSMSI Module**: Created and maintained by [Ironman Software](https://github.com/ironmansoftware/psmsi)
+- **Configuration Manager**: Microsoft System Center Configuration Manager
+- **PowerShell Community**: For best practices and module development standards
+
+## Links and Resources
+
+- **PSMSI GitHub Repository**: [https://github.com/ironmansoftware/psmsi](https://github.com/ironmansoftware/psmsi)
+- **PowerShell Gallery - PSMSI**: [https://www.powershellgallery.com/packages/PSMSI](https://www.powershellgallery.com/packages/PSMSI)
+- **Configuration Manager Documentation**: [https://docs.microsoft.com/en-us/mem/configmgr/](https://docs.microsoft.com/en-us/mem/configmgr/)
 
 ---
 
