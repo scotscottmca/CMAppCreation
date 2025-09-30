@@ -81,132 +81,132 @@ function Initialize-PSMIModule {
     }
 }
 
-    <#
-    .SYNOPSIS
-    Creates random Microsoft System Center Configuration Manager (SCCM) applications with MSI installers, deployment types, and deployments.
+<#
+.SYNOPSIS
+Creates random Microsoft System Center Configuration Manager (SCCM) applications with MSI installers, deployment types, and deployments.
 
-    .DESCRIPTION
-    The New-RandomCMApp function generates random Configuration Manager applications complete with MSI installers, 
-    deployment types, content distribution, and application deployments. This tool is designed for testing and 
-    lab environments to quickly populate Configuration Manager with realistic dummy applications.
+.DESCRIPTION
+The New-RandomCMApp function generates random Configuration Manager applications complete with MSI installers, 
+deployment types, content distribution, and application deployments. This tool is designed for testing and 
+lab environments to quickly populate Configuration Manager with realistic dummy applications.
 
-    The function creates:
-    - Random MSI installer packages with realistic metadata
-    - Random application names, descriptions, and publishers
-    - Random icons for each application
-    - Configuration Manager applications with proper deployment types
-    - Content distribution to distribution point groups
-    - Application deployments to the "All Users" collection
+The function creates:
+- Random MSI installer packages with realistic metadata
+- Random application names, descriptions, and publishers
+- Random icons for each application
+- Configuration Manager applications with proper deployment types
+- Content distribution to distribution point groups
+- Application deployments to the "All Users" collection
 
-    .PARAMETER OutputDirectory
-    Specifies the UNC path where the MSI installer files and associated content will be created. 
-    This must be a valid UNC path accessible by the Configuration Manager site server.
-    Example: "\\server\share\CMApplications\DummyApps"
+.PARAMETER OutputDirectory
+Specifies the UNC path where the MSI installer files and associated content will be created. 
+This must be a valid UNC path accessible by the Configuration Manager site server.
+Example: "\\server\share\CMApplications\DummyApps"
 
-    .PARAMETER NumberOfApps
-    Specifies the number of random applications to create. Each application will have its own 
-    MSI installer, deployment type, and deployment.
+.PARAMETER NumberOfApps
+Specifies the number of random applications to create. Each application will have its own 
+MSI installer, deployment type, and deployment.
 
-    .PARAMETER NumberOfAdditionalFiles
-    Optional. Specifies the number of additional files to create alongside each MSI installer.
-    These files simulate supporting documentation, configuration files, or other content that 
-    might be distributed with an application. Must be used with TotalSizeOfAdditionalFiles parameter.
+.PARAMETER NumberOfAdditionalFiles
+Optional. Specifies the number of additional files to create alongside each MSI installer.
+These files simulate supporting documentation, configuration files, or other content that 
+might be distributed with an application. Must be used with TotalSizeOfAdditionalFiles parameter.
 
-    .PARAMETER TotalSizeOfAdditionalFiles
-    Optional. Specifies the total size of all additional files to be created for each application.
-    Accepts values in KB, MB, or GB format (e.g., "500MB", "1.5GB", "2048KB").
-    Must be used with NumberOfAdditionalFiles parameter.
+.PARAMETER TotalSizeOfAdditionalFiles
+Optional. Specifies the total size of all additional files to be created for each application.
+Accepts values in KB, MB, or GB format (e.g., "500MB", "1.5GB", "2048KB").
+Must be used with NumberOfAdditionalFiles parameter.
 
-    .EXAMPLE
-    New-RandomCMApp -OutputDirectory "\\sccmserver\sources$\Applications\TestApps" -NumberOfApps 5
+.EXAMPLE
+New-RandomCMApp -OutputDirectory "\\sccmserver\sources$\Applications\TestApps" -NumberOfApps 5
 
-    Creates 5 random Configuration Manager applications with MSI installers in the specified UNC path.
+Creates 5 random Configuration Manager applications with MSI installers in the specified UNC path.
 
-    .EXAMPLE
-    New-RandomCMApp -OutputDirectory "\\pmpclabsccm\g$\cmapplications\DummyApplications" -NumberOfApps 10 -NumberOfAdditionalFiles 5 -TotalSizeOfAdditionalFiles "250MB"
+.EXAMPLE
+New-RandomCMApp -OutputDirectory "\\pmpclabsccm\g$\cmapplications\DummyApplications" -NumberOfApps 10 -NumberOfAdditionalFiles 5 -TotalSizeOfAdditionalFiles "250MB"
 
-    Creates 10 random Configuration Manager applications, each with 5 additional files totaling 250MB, 
-    stored in the specified network location.
+Creates 10 random Configuration Manager applications, each with 5 additional files totaling 250MB, 
+stored in the specified network location.
 
-    .EXAMPLE
-    New-RandomCMApp -OutputDirectory "\\fileserver\apps$\SCCM\RandomApps" -NumberOfApps 3 -NumberOfAdditionalFiles 15 -TotalSizeOfAdditionalFiles "1GB"
+.EXAMPLE
+New-RandomCMApp -OutputDirectory "\\fileserver\apps$\SCCM\RandomApps" -NumberOfApps 3 -NumberOfAdditionalFiles 15 -TotalSizeOfAdditionalFiles "1GB"
 
-    Creates 3 random Configuration Manager applications, each with 15 additional files totaling 1GB of content.
+Creates 3 random Configuration Manager applications, each with 15 additional files totaling 1GB of content.
 
-    .INPUTS
-    None. You cannot pipe objects to New-RandomCMApp.
+.INPUTS
+None. You cannot pipe objects to New-RandomCMApp.
 
-    .OUTPUTS
-    None. The function creates Configuration Manager applications and displays progress information to the console.
+.OUTPUTS
+None. The function creates Configuration Manager applications and displays progress information to the console.
 
-    .NOTES
-    Prerequisites:
-    - Configuration Manager Console must be installed
-    - SMS_ADMIN_UI_PATH environment variable must be set
-    - PowerShell execution policy must allow script execution
-    - User must have appropriate permissions to create applications in Configuration Manager
-    - PSMI module for creating MSI installers
-    - Network access to the specified OutputDirectory
+.NOTES
+Prerequisites:
+- Configuration Manager Console must be installed
+- SMS_ADMIN_UI_PATH environment variable must be set
+- PowerShell execution policy must allow script execution
+- User must have appropriate permissions to create applications in Configuration Manager
+- PSMI module for creating MSI installers
+- Network access to the specified OutputDirectory
 
-    The function automatically:
-    - Imports the Configuration Manager PowerShell module
-    - Connects to the Configuration Manager site
-    - Creates content in the specified output directory
-    - Distributes content to the first available distribution point group
-    - Deploys applications to the "All Users" collection as Available deployments
+The function automatically:
+- Imports the Configuration Manager PowerShell module
+- Connects to the Configuration Manager site
+- Creates content in the specified output directory
+- Distributes content to the first available distribution point group
+- Deploys applications to the "All Users" collection as Available deployments
 
-    .LINK
-    https://docs.microsoft.com/en-us/mem/configmgr/
+.LINK
+https://docs.microsoft.com/en-us/mem/configmgr/
 
-    .ROLE
-    Configuration Manager Administrator
+.ROLE
+Configuration Manager Administrator
 
-    .FUNCTIONALITY
-    Application Management, Content Distribution, Application Deployment
-    #>
-    function New-RandomCMApp {
-        param (
-            [Parameter(Mandatory=$true)]
-            [ValidateNotNullOrEmpty()]
-            [ValidatePattern('^\\\\[\w\.-]+\\[\w\$\.-]+(\\[\w\.-]+)*$')]
-            [string]$OutputDirectory,
+.FUNCTIONALITY
+Application Management, Content Distribution, Application Deployment
+#>
+function New-RandomCMApp {
+    param (
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [ValidatePattern('^\\\\[\w\.-]+\\[\w\$\.-]+(\\[\w\.-]+)*$')]
+        [string]$OutputDirectory,
 
-            [Parameter(Mandatory=$true)]
-            [ValidateNotNullOrEmpty()]
-            [string]$NumberOfApps,
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$NumberOfApps,
 
-            [Parameter(Mandatory=$false, ParameterSetName="WithAdditionalFiles")]
-            [ValidateNotNullOrEmpty()]
-            [int]$NumberOfAdditionalFiles = 0,
+        [Parameter(Mandatory=$false, ParameterSetName="WithAdditionalFiles")]
+        [ValidateNotNullOrEmpty()]
+        [int]$NumberOfAdditionalFiles = 0,
 
-            [Parameter(Mandatory=$false, ParameterSetName="WithAdditionalFiles")]
-            [ValidatePattern("^\d+(\.\d+)?(KB|MB|GB)$")]
-            [string]$TotalSizeOfAdditionalFiles
-        )
+        [Parameter(Mandatory=$false, ParameterSetName="WithAdditionalFiles")]
+        [ValidatePattern("^\d+(\.\d+)?(KB|MB|GB)$")]
+        [string]$TotalSizeOfAdditionalFiles
+    )
 
-        # Store the current working directory for restoration later
-        $OriginalDirectory = (Get-Location).Path
+    # Store the current working directory for restoration later
+    $OriginalDirectory = (Get-Location).Path
 
+    try {
+        # Initialize required modules
+        Initialize-PSMIModule
+
+        # Attempt to import the Configuration Manager module
         try {
-            # Initialize required modules
-            Initialize-PSMIModule
+            Import-Module $env:SMS_ADMIN_UI_PATH.Replace("\bin\i386", "\bin\configurationmanager.psd1") -ErrorAction Stop
+        } catch {
+            throw "Failed to import the Configuration Manager module. Ensure the SMS_ADMIN_UI_PATH environment variable is set correctly and the module exists."
+        }
 
-            # Attempt to import the Configuration Manager module
-            try {
-                Import-Module $env:SMS_ADMIN_UI_PATH.Replace("\bin\i386", "\bin\configurationmanager.psd1") -ErrorAction Stop
-            } catch {
-                throw "Failed to import the Configuration Manager module. Ensure the SMS_ADMIN_UI_PATH environment variable is set correctly and the module exists."
+        # Attempt to get the site code
+        try {
+            $SiteCode = Get-PSDrive -PSProvider CMSITE -ErrorAction Stop
+            if (-not $SiteCode) {
+                throw "Failed to retrieve the Configuration Manager site code. Ensure you have access to the Configuration Manager environment."
             }
-
-            # Attempt to get the site code
-            try {
-                $SiteCode = Get-PSDrive -PSProvider CMSITE -ErrorAction Stop
-                if (-not $SiteCode) {
-                    throw "Failed to retrieve the Configuration Manager site code. Ensure you have access to the Configuration Manager environment."
-                }
-            } catch {
-                throw "Failed to retrieve the Configuration Manager site code. Ensure the Configuration Manager console is installed and accessible."
-            }
+        } catch {
+            throw "Failed to retrieve the Configuration Manager site code. Ensure the Configuration Manager console is installed and accessible."
+        }
 
         for ($i = 1; $i -le $NumberOfApps; $i++) {
             Write-Host "Creating application $i of $NumberOfApps..." -ForegroundColor Cyan
@@ -287,6 +287,7 @@ function Initialize-PSMIModule {
             throw "Failed to create ConfigMgr applications: $($_.Exception.Message)"
         }
     } catch {
+        Set-Location -Path $OriginalDirectory
         throw "Failed to create ConfigMgr applications: $($_.Exception.Message)"
     }
 }
