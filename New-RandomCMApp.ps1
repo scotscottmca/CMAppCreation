@@ -289,30 +289,29 @@ function Initialize-PSMIModule {
     } catch {
         throw "Failed to create ConfigMgr applications: $($_.Exception.Message)"
     }
+}
 
 
-    function Write-CustomObject {
-        param (
-            [Parameter(Mandatory = $true)]
-            [PSCustomObject]$Object,
+function Write-CustomObject {
+    param (
+        [Parameter(Mandatory = $true)]
+        [PSCustomObject]$Object,
 
-            [Parameter(Mandatory = $true)]
-            [string]$OutputTitle
-        )
+        [Parameter(Mandatory = $true)]
+        [string]$OutputTitle
+    )
 
-        Write-Host "$($OutputTitle):" -ForegroundColor Cyan
-        Write-Host "=====================" -ForegroundColor Cyan
+    Write-Host "$($OutputTitle):" -ForegroundColor Cyan
+    Write-Host "=====================" -ForegroundColor Cyan
 
-        foreach ($Property in $Object.PSObject.Properties) {
-            $Name = $Property.Name
-            $Value = $Property.Value
+    foreach ($Property in $Object.PSObject.Properties) {
+        $Name = $Property.Name
+        $Value = $Property.Value
 
-            # Use different colors for property names and values
-            Write-Host "$($Name):" -ForegroundColor Yellow -NoNewline
-            Write-Host " $Value" -ForegroundColor Green
-        }
-
-        Write-Host "=====================" -ForegroundColor Cyan
+        # Use different colors for property names and values
+        Write-Host "$($Name):" -ForegroundColor Yellow -NoNewline
+        Write-Host " $Value" -ForegroundColor Green
     }
 
+    Write-Host "=====================" -ForegroundColor Cyan
 }
