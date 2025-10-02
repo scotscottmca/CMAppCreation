@@ -281,11 +281,6 @@ function New-RandomCMApp {
             
             Set-Location -Path $OriginalDirectory
         }
-        catch {
-            # Ensure we always return to the original directory, even on error
-            Set-Location -Path $OriginalDirectory
-            throw "Failed to create ConfigMgr applications: $($_.Exception.Message)"
-        }
     } catch {
         Set-Location -Path $OriginalDirectory
         throw "Failed to create ConfigMgr applications: $($_.Exception.Message)"
